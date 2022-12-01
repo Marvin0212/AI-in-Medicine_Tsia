@@ -102,10 +102,10 @@ def predict_labels(ecg_leads : List[np.ndarray], fs : float, ecg_names : List[st
     predictions = list()   
     #load pretrained scaler
     #std_slc = pickle.load(open('/content/drive/My Drive/scaler.pkl','rb'))
-    std_slc = pickle.load(open('.../AI-in-Medicine_Tsia/scaler.pkl','rb'))
+    std_slc = pickle.load(open('.../AI-in-Medicine_Tsia/scaler.pkl','rb')) #ort müsste angepasst werden zum Ordner auf Ihrem Computer 
     #load model
     #bad_model = keras.models.load_model('/content/drive/My Drive/bad_CNN_model')
-    bad_model = keras.models.load_model('.../AI-in-Medicine_Tsia/bad_CNN_model')  
+    bad_model = keras.models.load_model('.../AI-in-Medicine_Tsia/bad_CNN_model') #ort müsste angepasst werden zum Ordner auf Ihrem Computer 
     #test_predictions_baseline = bad_model.predict(X_val,verbose=0)
     for idx,ecg_lead in enumerate(ecg_leads):
 ########preprocessing
