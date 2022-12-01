@@ -4,3 +4,6 @@ numpy==1.18.5
 py-ecg-detectors==1.0.2
 pandas==1.1.0
 mysql-connector-python==8.0.26
+tensorflow
+sklearn
+pickle
