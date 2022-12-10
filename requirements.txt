@@ -1,9 +1,9 @@
-scipy==1.4.1
-matplotlib==3.3.0
-numpy==1.18.5
+scipy==1.7.3
+matplotlib==3.2.2
+numpy==1.21.6
 py-ecg-detectors==1.0.2
+csv==1.0
 pandas==1.1.0
 mysql-connector-python==8.0.26
-tensorflow
-sklearn
-pickle
+tensorflow==2.9.2
+sklearn==1.0.2
