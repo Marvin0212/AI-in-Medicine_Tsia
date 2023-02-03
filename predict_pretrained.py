@@ -33,6 +33,7 @@ from tensorflow.keras import layers
 from tensorflow.keras import regularizers
 from keras.callbacks import ModelCheckpoint
 from keras.models import load_model
+from keras.callbacks import Callback
 import tensorflow as tf
 from sklearn.utils import class_weight
 import seaborn as sns
@@ -52,23 +53,43 @@ uploaded = files.upload()
 
 from google.colab import drive
 drive.mount('/content/drive')
-!cp "/content/drive/My Drive/Traindata_std_Low2.7/X_train_std.pkl" .    #Training and Validation Data
-!cp "/content/drive/My Drive/Traindata_std_Low2.7/X_val_std.pkl" .
+# !cp "/content/drive/My Drive/Traindata_std_Low2.7/X_train_std.pkl" .    #Training and Validation Data
+# !cp "/content/drive/My Drive/Traindata_std_Low2.7/X_val_std.pkl" .
 !cp "/content/drive/My Drive/Traindata_std_Low2.7/Y_train.pkl" .
 !cp "/content/drive/My Drive/Traindata_std_Low2.7/Y_val.pkl" .
-!cp "/content/drive/My Drive/Traindata_std_Low2.7/X_train_fft.pkl" .
-!cp "/content/drive/My Drive/Traindata_std_Low2.7/X_val_fft.pkl" .
+# !cp "/content/drive/My Drive/Traindata_std_Low2.7/X_train_fft_std.pkl" .
+# !cp "/content/drive/My Drive/Traindata_std_Low2.7/X_val_fft_std.pkl" .
+
+# !cp "/content/drive/My Drive/Traindata_std_Low2.7/X_train_fft.pkl" .
+# !cp "/content/drive/My Drive/Traindata_std_Low2.7/X_val_fft.pkl" .
 # !cp "/content/drive/My Drive/sdnn_afib.pkl" .                         #Raw ECG Data
 # !cp "/content/drive/My Drive/sdnn_normal.pkl" .
 !cp "/content/drive/My Drive/pred_train_Time.pkl" .                     #Stack Model Data
 !cp "/content/drive/My Drive/pred_val_Time.pkl" .
 !cp "/content/drive/My Drive/pred_train_fft.pkl" .
 !cp "/content/drive/My Drive/pred_val_fft.pkl" .
+# !cp "/content/drive/My Drive/X_train_std_small.pkl" .  #augmentation test
+# !cp "/content/drive/My Drive/X_val_std_small.pkl" .
+# !cp "/content/drive/My Drive/Y_train.pkl" .
+# !cp "/content/drive/My Drive/Y_val.pkl" .
 
 with open('X_train.pkl', 'rb') as f:
     X_train = pickle.load(f)
 with open('X_val.pkl', 'rb') as f:
     X_val = pickle.load(f)
+
+"""Data Without augmentation"""
+
+with open('X_train_std_small.pkl', 'rb') as f:
+    X_train_std = pickle.load(f)
+with open('X_val_std_small.pkl', 'rb') as f:
+    X_val_std = pickle.load(f)
+with open('Y_train.pkl', 'rb') as f:
+    Y_train = pickle.load(f)
+with open('Y_val.pkl', 'rb') as f:
+    Y_val = pickle.load(f)
+
+"""Trainings Data"""
 
 with open('X_train_std.pkl', 'rb') as f:
     X_train_std = pickle.load(f)
@@ -78,10 +99,17 @@ with open('Y_train.pkl', 'rb') as f:
     Y_train = pickle.load(f)
 with open('Y_val.pkl', 'rb') as f:
     Y_val = pickle.load(f)
-with open('X_train_fft.pkl', 'rb') as f:
-    X_train_fft = pickle.load(f)
-with open('X_val_fft.pkl', 'rb') as f:
-    X_val_fft = pickle.load(f)
+with open('X_train_fft_std.pkl', 'rb') as f:
+    X_train_fft_std = pickle.load(f)
+with open('X_val_fft_std.pkl', 'rb') as f:
+    X_val_fft_std = pickle.load(f)
+
+# with open('X_train_fft.pkl', 'rb') as f:
+#     X_train_fft = pickle.load(f)
+# with open('X_val_fft.pkl', 'rb') as f:
+#     X_val_fft = pickle.load(f)
+
+"""Data for stack Model"""
 
 with open('pred_train_Time.pkl', 'rb') as f:
     pred_train_Time = pickle.load(f)
@@ -95,6 +123,8 @@ with open('Y_train.pkl', 'rb') as f:
     Y_train = pickle.load(f)
 with open('Y_val.pkl', 'rb') as f:
     Y_val = pickle.load(f)
+
+"""Raw Data"""
 
 with open('sdnn_normal.pkl', 'rb') as f:
     sdnn_normal = pickle.load(f)
@@ -127,7 +157,7 @@ with open('training/REFERENCE.csv') as csv_file:      # Einlesen der Liste mit D
     for row in csv_reader:
       data = sio.loadmat('training/'+row[0]+'.mat')   # Import der EKG-Dateien
       ecg_lead = data['val'][0]
-      ecg_array_processed, amount_data= data_preprocessing_short(ecg_lead) #data preprocessing 0=fill with zero 1=fill with mean 2=loop
+      ecg_array_processed, amount_data= data_preprocessing_short(ecg_lead) #data preprocessing 
       amount_data=np.arange(0,amount_data)
       if row[1] != 'A':                                                   # includes N,O,~
         for i in amount_data: 
@@ -160,8 +190,8 @@ X_train_afib, X_test_afib = train_test_split(sdnn_afib, test_size=0.2, random_st
 del sdnn_normal,sdnn_afib
 ####Data Augmentation
 stretch_min=1.1
-stretch_max=2.4
-augmentation_factor=6
+stretch_max=1.3
+augmentation_factor=3
 #stretch normal ecg
 X_train_normal_length=len(X_train_normal)
 stretch = np.arange(stretch_min,stretch_max,0.1)
@@ -196,9 +226,9 @@ choices = np.random.choice(ids, len(X_train_normal))
 X_train_afib_balanced = X_train_afib[choices]
 
 #balance the test dataset without getting test data into the training data 
-ids = np.arange(len(X_test_afib))
-choices = np.random.choice(ids, len(X_test_normal))
-X_test_afib_balanced = X_test_afib[choices]
+# ids = np.arange(len(X_test_afib))
+# choices = np.random.choice(ids, len(X_test_normal))
+# X_test_afib_balanced = X_test_afib[choices]
 
 #train class
 normal_class_train=np.zeros(X_train_normal.shape[0])       
@@ -209,16 +239,18 @@ afib_class_train.fill(1)
 #test class
 normal_class_test=np.zeros(X_test_normal.shape[0])       
 normal_class_test.fill(0)
-afib_class_test=np.zeros(X_test_afib_balanced.shape[0])
+#balanced data
+#afib_class_test=np.zeros(X_test_afib_balanced.shape[0])
+afib_class_test=np.zeros(X_test_afib.shape[0])
 afib_class_test.fill(1)
 
 #combine train and test set
 X_train=np.concatenate((X_train_normal, X_train_afib_balanced))
 y_train=np.concatenate((normal_class_train, afib_class_train))
 del X_train_normal, X_train_afib_balanced,normal_class_train, afib_class_train
-X_val=np.concatenate((X_test_normal, X_test_afib_balanced))
+X_val=np.concatenate((X_test_normal, X_test_afib))
 y_val=np.concatenate((normal_class_test, afib_class_test))
-del X_test_normal, X_test_afib_balanced,normal_class_test, afib_class_test
+del X_test_normal, X_test_afib,normal_class_test, afib_class_test
 #shuffle train 
 order = np.arange(len(X_train))
 np.random.shuffle(order)
@@ -235,11 +267,6 @@ X_val = X_val.astype('float32')
 Y_train = np_utils.to_categorical(y_train, nb_classes)
 Y_val = np_utils.to_categorical(y_val, nb_classes)
 
-with open('X_train.pkl', 'wb') as f:
-    pickle.dump(X_train, f)
-with open('X_val.pkl', 'wb') as f:
-    pickle.dump(X_val, f)
-
 sampling_freq = 300 # Hz
 fft_size = len(X_train[0])
 # Create a pre-allocated numpy array to store the FFTs of the time series in X_train
@@ -251,7 +278,7 @@ index = []
 for i, series in enumerate(X_train):
     fft_results = np.fft.fft(X_train[i,:], fft_size)
     # Only save the positive half of the FFT results
-    X_train_fft[i,:] = fft_results[:fft_size // 2]
+    X_train_fft[i,:] = abs(fft_results[:fft_size // 2])
     # Cumulatively sum
     cumulative_sum = np.cumsum(abs(X_train_fft[i,:]))
     # Find the threshold value at which 99% of the power has been accumulated
@@ -267,7 +294,7 @@ del index,fft_results,cumulative_sum
 for i, series in enumerate(X_val):
     fft_results = np.fft.fft(X_val[i,:], fft_size)
     # Only save the positive half of the FFT results
-    X_val_fft[i,:] = fft_results[:fft_size // 2]
+    X_val_fft[i,:] = abs(fft_results[:fft_size // 2])
 
 del fft_results
 # #Cut FFT at that frequency
@@ -318,7 +345,6 @@ X_val=X_valplt
 # index=np.arange(0,X_train.shape[0])
 # for i in index:
 #   X_train[i,:] = butterworth_filter(X_train[i,:], lowcut=1.5, highcut=cutoff_frequency, fs=300, order=2)
-
 # index=np.arange(0,X_val.shape[0])
 # for i in index:
 #   X_val[i,:] = butterworth_filter(X_val[i,:], lowcut=1.5, highcut=cutoff_frequency, fs=300, order=2)
@@ -344,22 +370,36 @@ X_train = np.clip(X_train, -500, 500)
 X_val = np.clip(X_val, -500, 500)
 
 #standardize the data between -1 and 1
-def standardize_data(X_train, X_val):
-    scaler = MinMaxScaler(feature_range=(-1, 1))
-    X_train_std = scaler.fit_transform(X_train)
-    X_val_std = scaler.transform(X_val)
+def standardize_data_time(X_train, X_val):
+    scaler_time = MinMaxScaler(feature_range=(-1, 1))
+    X_train_std = scaler_time.fit_transform(X_train)
+    X_val_std = scaler_time.transform(X_val)
+    pickle.dump(scaler_time, open('/content/drive/My Drive/minmax_scaler_time.pkl','wb'))
     return X_train_std, X_val_std
-X_train_std, X_val_std = standardize_data(X_train, X_val)
+X_train_std, X_val_std = standardize_data_time(X_train, X_val)
 del X_train, X_val
-# #standardize with mean=0 and std=1
-# std_slc = StandardScaler()
-# std_slc.fit(X_train)
-# X_train_std = std_slc.transform(X_train)
-# X_val_std = std_slc.transform(X_val)
 
-#save slc for predictions
-#pickle.dump(std_slc, open('/content/drive/My Drive/scaler.pkl','wb'))
+#standardize FFT
+# #standardize the data between -1 and 1
+# def standardize_data_fft(X_train_fft, X_val_fft):
+#     scaler_fft = MinMaxScaler(feature_range=(0, 1))
+#     X_train_fft_minmax = scaler_fft.fit_transform(X_train_fft)
+#     X_val_fftminmax = scaler_fft.transform(X_val_fft)
+#     pickle.dump(scaler_fft, open('/content/drive/My Drive/minmax_scaler_fft.pkl','wb'))
+#     return X_train_fft_minmax, X_val_fft_minmax
+# X_train_fft_minmax, X_val_fft_minmax = standardize_data_fft(X_train_fft, X_val_fft)
 
+#standardize with mean=0 and std=1
+def standardize_data_fft(X_train_fft, X_val_fft):
+    scaler_fft = StandardScaler()
+    X_train_fft_std = scaler_fft.fit_transform(X_train_fft)
+    X_val_fft_std = scaler_fft.transform(X_val_fft)
+    pickle.dump(scaler_fft, open('/content/drive/My Drive/std_scaler_fft.pkl','wb'))
+    return X_train_fft_std, X_val_fft_std
+X_train_fft_std, X_val_fft_std = standardize_data_fft(X_train_fft, X_val_fft)
+
+
+print('Time Data')
 print('Training labels shape:', Y_train.shape)
 print('Validation labels shape:', Y_val.shape)
 #print('Test labels shape:', test_labels.shape)
@@ -390,6 +430,24 @@ total=sum_class1+sum_class2
 
 print('Validation Data:\n    Total: {}\n    Positive: {} ({:.2f}% of total)\n'.format(
     total, sum_class2, 100 * sum_class2 / total))
+
+# print('FFT Data')
+# print('Training features shape:', X_train_fft.shape)
+# print('Validation features shape:', X_val_fft.shape)
+# #print('Test features shape:', test_features.shape)
+
+# print('max value:',np.amax(X_train_fft))
+# print('mean value:',np.mean(X_train_fft))
+# print('min value:',np.amin(X_train_fft))
+
+# print('FFT Data std')
+# print('Training features shape:', X_train_fft_std.shape)
+# print('Validation features shape:', X_train_fft_std.shape)
+# #print('Test features shape:', test_features.shape)
+
+# print('max value:',np.amax(X_train_fft_std))
+# print('mean value:',np.mean(X_train_fft_std))
+# print('min value:',np.amin(X_train_fft_std))
 
 # #calculate weights if thats how you adjust learning process with imbalanced dataset  
 # weight_for_0 = (1 / sum_class1) * (total / 2.0)
@@ -445,10 +503,14 @@ with open('/content/drive/My Drive/Traindata_std_Low2.7/Y_train.pkl', 'wb') as f
     pickle.dump(Y_train, f)
 with open('/content/drive/My Drive/Traindata_std_Low2.7/Y_val.pkl', 'wb') as f:
     pickle.dump(Y_val, f)
-with open('/content/drive/My Drive/Traindata_std_Low2.7/X_train_fft.pkl', 'wb') as f:
-    pickle.dump(X_train_fft, f)
-with open('/content/drive/My Drive/Traindata_std_Low2.7/X_val_fft.pkl', 'wb') as f:
-    pickle.dump(X_val_fft, f)
+with open('/content/drive/My Drive/Traindata_std_Low2.7/X_train_fft_std.pkl', 'wb') as f:
+    pickle.dump(X_train_fft_std, f)
+with open('/content/drive/My Drive/Traindata_std_Low2.7/X_val_fft_std.pkl', 'wb') as f:
+    pickle.dump(X_val_fft_std, f)    
+# with open('/content/drive/My Drive/Traindata_std_Low2.7/X_train_fft.pkl', 'wb') as f:
+#     pickle.dump(X_train_fft, f)
+# with open('/content/drive/My Drive/Traindata_std_Low2.7/X_val_fft.pkl', 'wb') as f:
+#     pickle.dump(X_val_fft, f)
 
 """# Keras Tuner Hypermodel Training"""
 
@@ -968,6 +1030,15 @@ METRICS = [
       keras.metrics.AUC(name='prc', curve='PR'), # precision-recall curve
       keras.metrics.BinaryAccuracy(name='binary_accuracy')
 ]
+def f1_score(y_true, y_pred):
+    y_pred = tf.cast(tf.round(y_pred), tf.float32)
+    tp = tf.reduce_sum(y_true * y_pred, axis=0)
+    fp = tf.reduce_sum((1 - y_true) * y_pred, axis=0)
+    fn = tf.reduce_sum(y_true * (1 - y_pred), axis=0)
+    precision = tp / (tp + fp + tf.keras.backend.epsilon())
+    recall = tp / (tp + fn + tf.keras.backend.epsilon())
+    return 2 * precision * recall / (precision + recall + tf.keras.backend.epsilon())
+
 def make_model_stride(metrics=METRICS, output_bias=None):
 ####input time series X_train
   input_1 = keras.layers.Input(shape=[3000, 1])
@@ -1010,55 +1081,55 @@ def make_model_stride(metrics=METRICS, output_bias=None):
   batch_norm_14 = layers.BatchNormalization()(conv_14)
   conv_15 = keras.layers.Conv1D(filters=256, kernel_size=3,strides=2, activation="relu", padding='same', kernel_regularizer=regularizers.l2(0.0001))(batch_norm_14)
   batch_norm_15 = layers.BatchNormalization()(conv_15)
-  conv_16 = keras.layers.Conv1D(filters=256, kernel_size=3,strides=2, activation="relu", padding='same', kernel_regularizer=regularizers.l2(0.0001))(batch_norm_15)
+  conv_16 = keras.layers.Conv1D(filters=256, kernel_size=3, activation="relu", padding='same', kernel_regularizer=regularizers.l2(0.0001))(batch_norm_15)
+  flatten=keras.layers.Flatten()(conv_16)
+# ####input fft X_train_fft
+#   input_2 = keras.layers.Input(shape=[1017, 1])
+#   #strides=2, halfes the output shape
+#   fft_padding_1 = keras.layers.ZeroPadding1D(padding=524)(input_2)
+#   fft_conv_1 = keras.layers.Conv1D(filters=16, kernel_size=3, strides=2,activation="relu", padding='same', kernel_regularizer=regularizers.l2(0.0001))(fft_padding_1)
+#   fft_batch_norm_1 = layers.BatchNormalization()(fft_conv_1)
+#   fft_conv_2 = keras.layers.Conv1D(filters=16, kernel_size=3,strides=2,  activation="relu", padding='same', kernel_regularizer=regularizers.l2(0.0001))(fft_batch_norm_1)
 
-####input fft X_train_fft
-  input_2 = keras.layers.Input(shape=[1017, 1])
-  #strides=2, halfes the output shape
-  fft_padding_1 = keras.layers.ZeroPadding1D(padding=524)(input_2)
-  fft_conv_1 = keras.layers.Conv1D(filters=16, kernel_size=3, strides=2,activation="relu", padding='same', kernel_regularizer=regularizers.l2(0.0001))(fft_padding_1)
-  fft_batch_norm_1 = layers.BatchNormalization()(fft_conv_1)
-  fft_conv_2 = keras.layers.Conv1D(filters=16, kernel_size=3,strides=2,  activation="relu", padding='same', kernel_regularizer=regularizers.l2(0.0001))(fft_batch_norm_1)
+#   fft_batch_norm_2 = layers.BatchNormalization()(fft_conv_2)
+#   fft_padding_2 = keras.layers.ZeroPadding1D(padding=258)(fft_batch_norm_2)
+#   fft_conv_3 = keras.layers.Conv1D(filters=32, kernel_size=3,strides=2, activation="relu", padding='same', kernel_regularizer=regularizers.l2(0.0001))(fft_padding_2)
+#   fft_batch_norm_3 = layers.BatchNormalization()(fft_conv_3)
+#   fft_conv_4 = keras.layers.Conv1D(filters=32, kernel_size=3,strides=2, activation="relu", padding='same', kernel_regularizer=regularizers.l2(0.0001))(fft_batch_norm_3)
 
-  fft_batch_norm_2 = layers.BatchNormalization()(fft_conv_2)
-  fft_padding_2 = keras.layers.ZeroPadding1D(padding=258)(fft_batch_norm_2)
-  fft_conv_3 = keras.layers.Conv1D(filters=32, kernel_size=3,strides=2, activation="relu", padding='same', kernel_regularizer=regularizers.l2(0.0001))(fft_padding_2)
-  fft_batch_norm_3 = layers.BatchNormalization()(fft_conv_3)
-  fft_conv_4 = keras.layers.Conv1D(filters=32, kernel_size=3,strides=2, activation="relu", padding='same', kernel_regularizer=regularizers.l2(0.0001))(fft_batch_norm_3)
+#   fft_batch_norm_4 = layers.BatchNormalization()(fft_conv_4)
+#   fft_padding_3 = keras.layers.ZeroPadding1D(padding=129)(fft_batch_norm_4)
+#   fft_conv_5 = keras.layers.Conv1D(filters=64, kernel_size=3,strides=2, activation="relu", padding='same', kernel_regularizer=regularizers.l2(0.0001))(fft_padding_3)
+#   fft_batch_norm_5 = layers.BatchNormalization()(fft_conv_5)
+#   fft_conv_6 = keras.layers.Conv1D(filters=64, kernel_size=3,strides=2, activation="relu", padding='same', kernel_regularizer=regularizers.l2(0.0001))(fft_batch_norm_5)
+#   fft_batch_norm_6 = layers.BatchNormalization()(fft_conv_6)
+#   fft_conv_7 = keras.layers.Conv1D(filters=64, kernel_size=3,strides=2, activation="relu", padding='same', kernel_regularizer=regularizers.l2(0.0001))(fft_batch_norm_6)
+#   fft_batch_norm_7 = layers.BatchNormalization()(fft_conv_7)
+#   fft_conv_8 = keras.layers.Conv1D(filters=64, kernel_size=3,strides=2, activation="relu", padding='same', kernel_regularizer=regularizers.l2(0.0001))(fft_batch_norm_7)
 
-  fft_batch_norm_4 = layers.BatchNormalization()(fft_conv_4)
-  fft_padding_3 = keras.layers.ZeroPadding1D(padding=129)(fft_batch_norm_4)
-  fft_conv_5 = keras.layers.Conv1D(filters=64, kernel_size=3,strides=2, activation="relu", padding='same', kernel_regularizer=regularizers.l2(0.0001))(fft_padding_3)
-  fft_batch_norm_5 = layers.BatchNormalization()(fft_conv_5)
-  fft_conv_6 = keras.layers.Conv1D(filters=64, kernel_size=3,strides=2, activation="relu", padding='same', kernel_regularizer=regularizers.l2(0.0001))(fft_batch_norm_5)
-  fft_batch_norm_6 = layers.BatchNormalization()(fft_conv_6)
-  fft_conv_7 = keras.layers.Conv1D(filters=64, kernel_size=3,strides=2, activation="relu", padding='same', kernel_regularizer=regularizers.l2(0.0001))(fft_batch_norm_6)
-  fft_batch_norm_7 = layers.BatchNormalization()(fft_conv_7)
-  fft_conv_8 = keras.layers.Conv1D(filters=64, kernel_size=3,strides=2, activation="relu", padding='same', kernel_regularizer=regularizers.l2(0.0001))(fft_batch_norm_7)
+#   fft_batch_norm_8 = layers.BatchNormalization()(fft_conv_8)
+#   fft_padding_4 = keras.layers.ZeroPadding1D(padding=16)(fft_batch_norm_8)
+#   fft_conv_9 = keras.layers.Conv1D(filters=128, kernel_size=3,strides=2, activation="relu", padding='same', kernel_regularizer=regularizers.l2(0.0001))(fft_padding_4)
+#   fft_batch_norm_9 = layers.BatchNormalization()(fft_conv_9)
+#   fft_conv_10 = keras.layers.Conv1D(filters=128, kernel_size=3,strides=2, activation="relu", padding='same', kernel_regularizer=regularizers.l2(0.0001))(fft_batch_norm_9)
+#   fft_batch_norm_10 = layers.BatchNormalization()(fft_conv_10)
+#   fft_conv_11 = keras.layers.Conv1D(filters=128, kernel_size=3,strides=2, activation="relu", padding='same', kernel_regularizer=regularizers.l2(0.0001))(fft_batch_norm_10)
+#   fft_batch_norm_11 = layers.BatchNormalization()(fft_conv_11)
+#   fft_conv_12 = keras.layers.Conv1D(filters=128, kernel_size=3,strides=2, activation="relu", padding='same', kernel_regularizer=regularizers.l2(0.0001))(fft_batch_norm_11)
 
-  fft_batch_norm_8 = layers.BatchNormalization()(fft_conv_8)
-  fft_padding_4 = keras.layers.ZeroPadding1D(padding=16)(fft_batch_norm_8)
-  fft_conv_9 = keras.layers.Conv1D(filters=128, kernel_size=3,strides=2, activation="relu", padding='same', kernel_regularizer=regularizers.l2(0.0001))(fft_padding_4)
-  fft_batch_norm_9 = layers.BatchNormalization()(fft_conv_9)
-  fft_conv_10 = keras.layers.Conv1D(filters=128, kernel_size=3,strides=2, activation="relu", padding='same', kernel_regularizer=regularizers.l2(0.0001))(fft_batch_norm_9)
-  fft_batch_norm_10 = layers.BatchNormalization()(fft_conv_10)
-  fft_conv_11 = keras.layers.Conv1D(filters=128, kernel_size=3,strides=2, activation="relu", padding='same', kernel_regularizer=regularizers.l2(0.0001))(fft_batch_norm_10)
-  fft_batch_norm_11 = layers.BatchNormalization()(fft_conv_11)
-  fft_conv_12 = keras.layers.Conv1D(filters=128, kernel_size=3,strides=2, activation="relu", padding='same', kernel_regularizer=regularizers.l2(0.0001))(fft_batch_norm_11)
-
-  fft_batch_norm_12 = layers.BatchNormalization()(fft_conv_12)
-  fft_padding_5 = keras.layers.ZeroPadding1D(padding=2)(fft_batch_norm_12)
-  fft_conv_13 = keras.layers.Conv1D(filters=256, kernel_size=3,strides=2, activation="relu", padding='same', kernel_regularizer=regularizers.l2(0.0001))(fft_padding_5)
-  fft_batch_norm_13 = layers.BatchNormalization()(fft_conv_13)
-  fft_conv_14 = keras.layers.Conv1D(filters=256, kernel_size=3,strides=2, activation="relu", padding='same', kernel_regularizer=regularizers.l2(0.0001))(fft_batch_norm_13)
-  fft_batch_norm_14 = layers.BatchNormalization()(fft_conv_14)
-  fft_conv_15 = keras.layers.Conv1D(filters=256, kernel_size=3,strides=2, activation="relu", padding='same', kernel_regularizer=regularizers.l2(0.0001))(fft_batch_norm_14)
-  fft_batch_norm_15 = layers.BatchNormalization()(fft_conv_15)
-  fft_conv_16 = keras.layers.Conv1D(filters=256, kernel_size=3,strides=2, activation="relu", padding='same', kernel_regularizer=regularizers.l2(0.0001))(fft_batch_norm_15)
+#   fft_batch_norm_12 = layers.BatchNormalization()(fft_conv_12)
+#   fft_padding_5 = keras.layers.ZeroPadding1D(padding=2)(fft_batch_norm_12)
+#   fft_conv_13 = keras.layers.Conv1D(filters=256, kernel_size=3,strides=2, activation="relu", padding='same', kernel_regularizer=regularizers.l2(0.0001))(fft_padding_5)
+#   fft_batch_norm_13 = layers.BatchNormalization()(fft_conv_13)
+#   fft_conv_14 = keras.layers.Conv1D(filters=256, kernel_size=3,strides=2, activation="relu", padding='same', kernel_regularizer=regularizers.l2(0.0001))(fft_batch_norm_13)
+#   fft_batch_norm_14 = layers.BatchNormalization()(fft_conv_14)
+#   fft_conv_15 = keras.layers.Conv1D(filters=256, kernel_size=3,strides=2, activation="relu", padding='same', kernel_regularizer=regularizers.l2(0.0001))(fft_batch_norm_14)
+#   fft_batch_norm_15 = layers.BatchNormalization()(fft_conv_15)
+#   fft_conv_16 = keras.layers.Conv1D(filters=256, kernel_size=3,strides=2, activation="relu", padding='same', kernel_regularizer=regularizers.l2(0.0001))(fft_batch_norm_15)
 
   # Merge the outputs of the two convolutional layers
-  merged = keras.layers.Concatenate()([conv_16, fft_conv_16])
-  flatten=keras.layers.Flatten()(merged)
+  # merged = keras.layers.Concatenate()([conv_16, fft_conv_16])
+  # flatten=keras.layers.Flatten()(merged)
 
   # flat_max_pool_3 = keras.layers.Flatten()(conv_16)
   # flat_fft_max_pool_3 = keras.layers.Flatten()(fft_conv_16)
@@ -1078,29 +1149,39 @@ def make_model_stride(metrics=METRICS, output_bias=None):
   output = keras.layers.Dense(2, activation='sigmoid')(dense_batch_norm_3)
   
   # Create the model with two inputs and one output
-  model = keras.Model(inputs=[input_1, input_2], outputs=output)
-
+  #odel = keras.Model(inputs=[input_1, input_2], outputs=output)
+  model = keras.Model(inputs=[input_1], outputs=output)
   model.compile(
     optimizer=keras.optimizers.Adam(learning_rate=1e-2),
     loss=keras.losses.BinaryCrossentropy(),
-    metrics=metrics)
+    metrics=[metrics,f1_score])
   
   return model
 
 """# CNN Model for the Time Series"""
 
 METRICS = [
-      keras.metrics.TruePositives(name='tp'),
-      keras.metrics.FalsePositives(name='fp'),
-      keras.metrics.TrueNegatives(name='tn'),
-      keras.metrics.FalseNegatives(name='fn'), 
-      keras.metrics.BinaryAccuracy(name='accuracy'),
+      # keras.metrics.TruePositives(name='tp'),
+      # keras.metrics.FalsePositives(name='fp'),
+      # keras.metrics.TrueNegatives(name='tn'),
+      # keras.metrics.FalseNegatives(name='fn'), 
+      # keras.metrics.BinaryAccuracy(name='accuracy'),
       keras.metrics.Precision(name='precision'),
       keras.metrics.Recall(name='recall'),
       keras.metrics.AUC(name='auc'),
       keras.metrics.AUC(name='prc', curve='PR'), # precision-recall curve
       keras.metrics.BinaryAccuracy(name='binary_accuracy')
 ]
+
+def f1_score(y_true, y_pred):
+    y_pred = tf.cast(tf.round(y_pred), tf.float32)
+    tp = tf.reduce_sum(y_true * y_pred, axis=0)
+    fp = tf.reduce_sum((1 - y_true) * y_pred, axis=0)
+    fn = tf.reduce_sum(y_true * (1 - y_pred), axis=0)
+    precision = tp / (tp + fp + tf.keras.backend.epsilon())
+    recall = tp / (tp + fn + tf.keras.backend.epsilon())
+    return 2 * precision * recall / (precision + recall + tf.keras.backend.epsilon())
+
 ################CNN_Timeseries###################
 def make_model_Time(metrics=METRICS, output_bias=None):
 ##input time series X_train
@@ -1167,7 +1248,7 @@ def make_model_Time(metrics=METRICS, output_bias=None):
   model.compile(
     optimizer=keras.optimizers.Adam(learning_rate=1e-2),
     loss=keras.losses.BinaryCrossentropy(),
-    metrics=metrics)
+    metrics=[metrics,f1_score])
   
   return model
 
@@ -1185,6 +1266,15 @@ METRICS = [
       keras.metrics.AUC(name='prc', curve='PR'), # precision-recall curve
       keras.metrics.BinaryAccuracy(name='binary_accuracy')
 ]
+def f1_score(y_true, y_pred):
+    y_pred = tf.cast(tf.round(y_pred), tf.float32)
+    tp = tf.reduce_sum(y_true * y_pred, axis=0)
+    fp = tf.reduce_sum((1 - y_true) * y_pred, axis=0)
+    fn = tf.reduce_sum(y_true * (1 - y_pred), axis=0)
+    precision = tp / (tp + fp + tf.keras.backend.epsilon())
+    recall = tp / (tp + fn + tf.keras.backend.epsilon())
+    return 2 * precision * recall / (precision + recall + tf.keras.backend.epsilon())
+
 def make_model_FFT(metrics=METRICS, output_bias=None):
 ###input fft X_train_fft
   input_1 = keras.layers.Input(shape=[1500, 1])
@@ -1230,11 +1320,13 @@ def make_model_FFT(metrics=METRICS, output_bias=None):
   model.compile(
     optimizer=keras.optimizers.Adam(learning_rate=1e-2),
     loss=keras.losses.BinaryCrossentropy(),
-    metrics=metrics)
+    metrics=[metrics, f1_score])
   
   return model
 
-"""# *Seqentiell Model and Autoencoder Modell structure*"""
+"""# *Seqentiell Model and Autoencoder Modell structure* 
+fand keine Anwendung in diesem Modell
+"""
 
 #################sequentiell model#####################
 # def make_model(metrics=METRICS, output_bias=None):
@@ -1338,7 +1430,7 @@ def make_model_FFT(metrics=METRICS, output_bias=None):
 
 """# Training of Neural Network"""
 
-#model = make_model()
+#model = make_model_FFT()
 # Load the model from the saved checkpoint
 #model = load_model('/content/drive/My Drive/1-1CNN16&256_FullFFT&Signalmaxpool_augmentation5_512I_Dense384R0.01D0.2&384R0.01D0.3_O0.01.h5')
 #model.summary()
@@ -1351,8 +1443,9 @@ def make_model_FFT(metrics=METRICS, output_bias=None):
 #     mode='min',
 #     restore_best_weights=True)
 # #safe best model after every epoch
-# checkpoint = ModelCheckpoint(filepath='/content/drive/My Drive/best_model.h5', 
-#                              monitor='val_loss', 
+# checkpoint = ModelCheckpoint(filepath='/content/drive/My Drive/best_model_fft0.h5', 
+#                              monitor='val_f1_score', 
+#                              mode='max', 
 #                              save_best_only=True, 
 #                              verbose=1)
 #fft+Time signal
@@ -1368,8 +1461,8 @@ def make_model_FFT(metrics=METRICS, output_bias=None):
 # )
 #fft or Time series
 # history = model.fit(
-#     X_train_std, Y_train,
-#     validation_data=(X_val_std, Y_val),
+#     X_train_fft_std, Y_train,
+#     validation_data=(X_val_fft_std, Y_val),
 #     epochs=50,
 #     #callbacks=[early_stopping],
 #     callbacks=[checkpoint],
@@ -1377,26 +1470,39 @@ def make_model_FFT(metrics=METRICS, output_bias=None):
 #     #class_weight=class_weight,  
 #     verbose=1,
 # )
-# Number of models to train
-n_models = 15
 
+class SaveAndStopCallback(Callback):
+    def __init__(self, filepath, stop_value):
+        self.filepath = filepath
+        self.stop_value = stop_value
+
+    def on_epoch_end(self, epoch, logs={}):
+        val_f1_score = logs.get('val_f1_score')
+        if val_f1_score >= self.stop_value:
+            self.model.save(self.filepath)
+            self.stopped_epoch = epoch
+            self.model.stop_training = True
+n_models = 15
+stop_value = 0.72
 for i in range(n_models):
     # Create a new subset of data
-    X_subset, Y_subset = resample(X_train_std, Y_train)
+    X_subset, Y_subset = resample(X_train_fft_std, Y_train)
     # Create a new neural network model
-    model = make_model_Time()
-    # Give the model a unique name
-    #model.name = "model_" + str(i)
+    model = make_model_FFT()
     # Define the checkpoint function
-    filepath='/content/drive/My Drive/best_model_Time'+str(i+10)+'.h5'
+    filepath='/content/drive/My Drive/best_model_fft'+str(i+1)+'.h5'
     checkpoint = ModelCheckpoint(filepath, 
-                             monitor='val_loss', 
-                             save_best_only=True, 
-                             verbose=1)
+                                  monitor='val_f1_score', 
+                                  mode='max', 
+                                  save_best_only=True,
+                                  verbose=1)
+    save_and_stop = SaveAndStopCallback(filepath, stop_value)
+    callbacks_list = [checkpoint, save_and_stop]
     # Train the model on the subset of data
-    history = model.fit(X_subset, Y_subset, validation_data=(X_val_std, Y_val), epochs=50, batch_size=128, callbacks=[checkpoint], verbose=1)
+    history = model.fit(X_subset, Y_subset, validation_data=(X_val_fft_std, Y_val), epochs=50, batch_size=128, callbacks=callbacks_list, verbose=1)
     del model,X_subset,Y_subset
     gc.collect()
+
 
 #colors = plt.rcParams['axes.prop_cycle'].by_key()['color']
 # def plot_loss(history, label, n):
@@ -1440,6 +1546,19 @@ for i in range(n_models):
 
 # plot_metrics(history)
 
+# # #determine best epoch
+val_acc_per_epoch = history.history['val_f1_score']
+best_epoch = val_acc_per_epoch.index(max(val_acc_per_epoch)) + 1
+print('Best epoch f1 Score: %d' % (best_epoch,))
+val_acc_per_epoch = history.history['val_loss']
+best_epoch = val_acc_per_epoch.index(min(val_acc_per_epoch)) + 1
+print('Best epoch loss: %d' % (best_epoch,))
+# #plot loss
+history_frame = pd.DataFrame(history.history)
+history_frame.loc[:, ['loss', 'val_loss']].plot()
+#history_frame.loc[:, ['binary_accuracy', 'val_binary_accuracy']].plot();
+history_frame.loc[:, ['f1_score', 'val_f1_score']].plot();
+
 """# Stack Model
 
 get predictions for each model and combine them to Training and Validation Data
@@ -1447,39 +1566,39 @@ get predictions for each model and combine them to Training and Validation Data
 
 def predict_time(model_names):
     # list to store the predictions of the base models
-    data_length=20000
+    data_length=50000
     pred_train_Time = np.empty((data_length, 2*16 ))
     pred_val_Time = np.empty((len(X_val_std), 2*16 ))
     for i, model_name in enumerate(model_names):
         # load the model
-        model = load_model('/content/drive/My Drive/'+ model_name)
+        model = load_model('/content/drive/My Drive/'+ model_name,custom_objects={'f1_score': f1_score})
         # get the predictions for the train set
-        pred_train_Time[:,i*2:(i*2)+2]=model.predict(X_train_std[:20000,:])
+        pred_train_Time[:,i*2:(i*2)+2]=model.predict(X_train_std[:50000,:])
         # get the predictions for the validation set
         pred_val_Time[:,i*2:(i*2)+2]=model.predict(X_val_std)
     return pred_train_Time, pred_val_Time
-time_models = ['best_model_Time0.h5', 'best_model_Time1.h5', 'best_model_Time2.h5', 'best_model_Time3.h5',
-               'best_model_Time4.h5', 'best_model_Time5.h5', 'best_model_Time6.h5', 'best_model_Time7.h5',
-               'best_model_Time8.h5', 'best_model_Time9.h5', 'best_model_Time10.h5', 'best_model_Time11.h5',
-               'best_model_Time12.h5','best_model_Time13.h5','best_model_Time14.h5', 'best_model_Time15.h5']
+time_models = ['best_model_time0.h5', 'best_model_time1.h5', 'best_model_time2.h5', 'best_model_time3.h5',
+               'best_model_time4.h5', 'best_model_time5.h5', 'best_model_time6.h5', 'best_model_time7.h5',
+               'best_model_time8.h5', 'best_model_time9.h5', 'best_model_time10.h5', 'best_model_time11.h5',
+               'best_model_time12.h5','best_model_time13.h5','best_model_time14.h5', 'best_model_time15.h5']
 pred_train_Time, pred_val_Time = predict_time(time_models)
-
+del X_val_std,X_train_std
 def predict_fft(model_names):
-    data_length=20000
+    data_length=50000
     pred_train_fft = np.empty((data_length, 2*16 ))
-    pred_val_fft = np.empty((len(X_val_fft), 2*16 ))
+    pred_val_fft = np.empty((len(X_val_fft_std), 2*16 ))
     for i, model_name in enumerate(model_names):
         # load the model
-        model = load_model('/content/drive/My Drive/'+model_name)
+        model = load_model('/content/drive/My Drive/'+model_name,custom_objects={'f1_score': f1_score})
         # get the predictions for the train set
-        pred_train_fft[:,i*2:(i*2)+2]=model.predict(X_train_fft[:20000,:])
+        pred_train_fft[:,i*2:(i*2)+2]=model.predict(X_train_fft_std[:50000,:])
         # get the predictions for the validation set
-        pred_val_fft[:,i*2:(i*2)+2]=model.predict(X_val_fft)
+        pred_val_fft[:,i*2:(i*2)+2]=model.predict(X_val_fft_std)
     return pred_train_fft, pred_val_fft
-fft_models = ['best_model_FFT0.h5', 'best_model_FFT1.h5', 'best_model_FFT2.h5', 'best_model_FFT3.h5',
-               'best_model_FFT4.h5', 'best_model_FFT5.h5', 'best_model_FFT6.h5', 'best_model_FFT7.h5',
-               'best_model_FFT8.h5', 'best_model_FFT9.h5', 'best_model_FFT10.h5', 'best_model_FFT11.h5',
-               'best_model_FFT12.h5','best_model_FFT13.h5','best_model_FFT14.h5', 'best_model_FFT15.h5']
+fft_models = ['best_model_fft0.h5', 'best_model_fft1.h5', 'best_model_fft2.h5', 'best_model_fft3.h5',
+               'best_model_fft4.h5', 'best_model_fft5.h5', 'best_model_fft6.h5', 'best_model_fft7.h5',
+               'best_model_fft8.h5', 'best_model_fft9.h5', 'best_model_fft10.h5', 'best_model_fft11.h5',
+               'best_model_fft12.h5','best_model_fft13.h5','best_model_fft14.h5', 'best_model_fft15.h5']
 pred_train_fft, pred_val_fft = predict_fft(fft_models)
 
 with open('/content/drive/My Drive/pred_train_Time.pkl', 'wb') as f:
@@ -1503,6 +1622,15 @@ METRICS = [
       keras.metrics.AUC(name='prc', curve='PR'), # precision-recall curve
       keras.metrics.BinaryAccuracy(name='binary_accuracy')
 ]
+def f1_score(y_true, y_pred):
+    y_pred = tf.cast(tf.round(y_pred), tf.float32)
+    tp = tf.reduce_sum(y_true * y_pred, axis=0)
+    fp = tf.reduce_sum((1 - y_true) * y_pred, axis=0)
+    fn = tf.reduce_sum(y_true * (1 - y_pred), axis=0)
+    precision = tp / (tp + fp + tf.keras.backend.epsilon())
+    recall = tp / (tp + fn + tf.keras.backend.epsilon())
+    return 2 * precision * recall / (precision + recall + tf.keras.backend.epsilon())
+    
 def make_stack_model(metrics=METRICS, output_bias=None):
   # input layers for the predictions of the two base models
   input_Time = keras.layers.Input(shape=(32,1), name='input_1')
@@ -1531,22 +1659,23 @@ def make_stack_model(metrics=METRICS, output_bias=None):
   model.compile(
     optimizer=keras.optimizers.Adam(learning_rate=1e-2),
     loss=keras.losses.BinaryCrossentropy(),
-    metrics=metrics)
+    metrics=[metrics,f1_score])
   return model
 
-stack_model = make_stack_model()
-stack_model.summary()
+# stack_model = make_stack_model()
+# stack_model.summary()
 
 #safe best model after every epoch
 checkpoint = ModelCheckpoint(filepath='/content/drive/My Drive/best_stack_model.h5', 
-                             monitor='val_binary_accuracy', 
+                             monitor='val_f1_score',
+                             mode='max',
                              save_best_only=True, 
                              verbose=1)
 ##fft+Time signal
 history = stack_model.fit(
-    (pred_train_Time,pred_train_fft), Y_train[:20000,:],
+    (pred_train_Time,pred_train_fft), Y_train[:50000,:],
     validation_data=((pred_val_Time,pred_val_fft), Y_val),
-    epochs=50,
+    epochs=500,
     callbacks=[checkpoint],
     batch_size=128,
     verbose=1,
@@ -1560,7 +1689,7 @@ history_frame.loc[:, ['binary_accuracy', 'val_binary_accuracy']].plot();
 """# Visualize Data"""
 
 #get best model from Training
-model=load_model('/content/drive/My Drive/best_stack_model0.93060.h5')
+model=load_model('/content/drive/My Drive/best_stack_model0.87192.h5',custom_objects={'f1_score': f1_score})
 #predict CNN Model
 #train_predictions_baseline = model.predict((X_train_std,X_train_fft),verbose=0)
 #test_predictions_baseline = model.predict((X_val_std,X_val_fft))
