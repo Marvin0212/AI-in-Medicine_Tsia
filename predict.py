@@ -38,6 +38,7 @@ import csv
 import scipy.io as sio
 import matplotlib.pyplot as plt
 import numpy as np
+import tensorflow as tf
 import os
 from typing import List, Tuple
 from tensorflow import keras
@@ -194,7 +195,7 @@ def predict_labels(ecg_leads : List[np.ndarray], fs : float, ecg_names : List[st
     print(stack_predictions.shape)
     j=1
     for i in range(len(list_len)):
-      prediction = np.sum(stack_predictions[j:data_lengths[i]+j+1,:], axis=0) / data_lengths[i] 
+      prediction = np.sum(stack_predictions[j:data_lengths[i]+j,:], axis=0) / data_lengths[i] 
       j+=data_lengths[i]
       if prediction[0] > 0.5:
           predictions.append((ecg_names[i], 'N'))
