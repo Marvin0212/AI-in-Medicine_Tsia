@@ -1,25 +1,30 @@
-# 18-ha-2010-pj
-Demo-Code zum Projektseminar "Wettbewerb künstliche Intelligenz in der Medizin" WiSe 2021/2022. Das Beispiel definiert gleichzeitig das Interface zu unserem Evaluierungs-System.
+## Pathological ECG Signal Classification - PhysioNet Challenge
 
-## Erste Schritte
+**Project Description:**
 
-1. Klone/Forke dieses Repository
-2. Richte ein eigenes Repository auf github/gitlab ein. Darüber könnt ihr später die Abgaben eurer Modelle machen.
-3. Python Environment anlegen (z.B. mit Anaconda), dann kann "requirements.txt" mit `pip install -r requirements.txt` ausgeführt werden und installiert die notwendigen Pakete 
+This repository contains my work for the George B. Moody PhysioNet Challenge, where the goal was to develop effective algorithms for the classification of pathological ECG signals. The project demonstrates a comprehensive approach to preprocessing, feature extraction, model development, and evaluation of ECG data, leveraging the power of deep learning to achieve accurate classification results.
 
-## Wichtig!
+### Key Components:
 
-Bitte achtet bei der Abgabe darauf, dass alle von uns gestellten Dateien auf dem Top-Level des Repositories liegen. Testet die Funktionsfähigkeit eures Codes mit dem Skript predict_pretrained.py. 
+1. **Data Preprocessing and Feature Engineering**: The project includes detailed preprocessing steps for ECG signal data, such as noise filtering, data augmentation, and standardization. Feature extraction techniques, particularly Fast Fourier Transform (FFT), are employed to transform the time-series data into a more informative representation for classification tasks.
 
-Die Dateien 
-- predict_pretrained.py
-- wettbewerb.py
-- score.py
+2. **Model Development**: Multiple neural network architectures, including Convolutional Neural Networks (CNNs) for time-series and frequency-domain data, have been developed and optimized. The models are designed to effectively capture the complex patterns in ECG signals that are indicative of various cardiac conditions.
 
-werden von uns beim testen auf den ursprünglichen Stand zurückgesetzt. Es ist deshalb nicht empfehlenswert diese zu verändern. In predict.py ist für die Funktion `predict_labels` das Interface festgelegt, das wir für die Evaluierung verwenden.
+3. **Model Optimization and Selection**: The repository includes `predict_pretrained.py`, a file showcasing the training and architecture optimization process. Hyperparameter tuning and experimentation with different model structures are detailed to demonstrate the methodology behind selecting the best-performing models.
 
-`predict_labels(ecg_leads : List[np.ndarray], fs : float, ecg_names : List[str], model_name : str='model.npy',is_binary_classifier : bool=False) -> List[Tuple[str,str]]`
+4. **Stack Model for Improved Accuracy**: A unique approach was taken by creating a stack model that combines predictions from several trained models. This technique enhances the overall predictive performance by leveraging the strengths of individual models.
 
-Insbesondere den `model_name` könnt ihr verwenden um bei der Abgabe verschiedene Modelle zu kennzeichnen, welche zum Beispiel durch eure Ordnerstruktur dargestellt werden. Der Parameter `is_binary_classifier` ermöglicht es zu entscheiden, ob mit dem Modell nur die zwei Hauptlabels "Atrial Fibrillation ['A']" und "Normal ['N']" klassfiziert werden (binärer Klassifikator), oder alle vier Label.
+5. **Models Directory**: All trained models are saved in the 'Models' directory. These models represent a diverse set of neural network architectures, each fine-tuned for the task of ECG signal classification.
 
-Bitte gebt alle verwendeten packages in "requirements.txt" bei der Abgabe zur Evaluation an und testet dies vorher in einer frischen Umgebung mit `pip install -r requirements.txt`. Als Basis habt ihr immer die vorgegebene "requirements.txt"-Datei. Wir selbst verwenden Python 3.8. Wenn es ein Paket gibt, welches nur unter einer anderen Version funktioniert ist das auch in Ordung. In dem Fall bitte Python-Version mit angeben.
+6. **Inference on New Data**: The `predict.py` file is provided for inference, utilizing the trained models to classify new ECG data. This script demonstrates the application of the models in a practical, real-world scenario, showcasing their robustness and accuracy.
+
+### Project Structure:
+
+- `predict_pretrained.py`: Script detailing the model training, optimization, and architecture selection.
+- `predict.py`: Script for performing inference using the trained models on new ECG data.
+- `Models/`: Directory containing the trained and optimized neural network models.
+
+
+### Contribution:
+
+This project is my contribution to the George B. Moody PhysioNet Challenge. It encapsulates my approach to handling complex ECG data, employing advanced deep learning techniques to achieve high accuracy in pathological ECG signal classification. My work demonstrates not only the application of neural networks to medical data but also the nuances of working with time-series signals in a healthcare context.
